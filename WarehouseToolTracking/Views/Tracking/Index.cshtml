@@ -226,6 +226,7 @@
     });
 
     function resetForm() {
+        $("#txtListID").val('');
         $("#txtSKU").val('');
         $("#txtTenSanPham").val('');
         $("#tblViTriCoHang tbody").empty();
@@ -234,7 +235,8 @@
         $("#txtSLThieu").val(1);
         $("#txtGhiChu").val('');
         tinhTongSL();
-        $("#txtSKU").focus();
+        //$("#txtSKU").focus();
+        $("#txtListID").focus();
     }
 
 
@@ -266,8 +268,8 @@
 
         var time = new Date().toLocaleTimeString('vi-VN');
         var ngay = new Date().toLocaleDateString('vi-VN');
-        var caLamViec = "Ca 1";
-        var tenNV = "Nguyễn Văn A";
+        var ca = "@Context.Session.GetString("CaLamViec")";
+        var tenNV = "@Context.Session.GetString("TenNhanVien")";
 
         var viTriThieu = $("#txtViTriThieu").val();
         var viTriLayBuText = total > 0
@@ -277,7 +279,7 @@
         var newRow = `<tr>
                 <td>${time}</td>
                 <td>${ngay}</td>
-                <td>${caLamViec}</td>
+                <td>${ca}</td>
                 <td>${tenNV}</td>
                 <td>${listID}</td>
                 <td>${sku}</td>
@@ -298,5 +300,9 @@
         $("#modalMessage").html(message);
         var modal = new bootstrap.Modal(document.getElementById('alertModal'));
         modal.show();
+
     }
+    $(document).ready(function () {
+        $("#txtListID").focus();
+    });
 </script>

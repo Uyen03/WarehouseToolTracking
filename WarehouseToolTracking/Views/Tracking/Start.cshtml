@@ -1,0 +1,63 @@
+﻿@model WarehouseToolTracking.Models.ShiftSelectionModel
+
+@{
+    ViewData["Title"] = "Chọn Ca - Nhân viên";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4>🚀 BẮT ĐẦU TRACKING ĐƠN THIẾU</h4>
+                </div>
+                <div class="card-body">
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger">@ViewBag.Error</div>
+                    }
+
+                    <form asp-action="Start" method="post">
+
+                        <!-- Ca làm việc -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Ca làm việc</label>
+                            <select asp-for="CaLamViec" class="form-select">
+                                <option value="">-- Chọn ca --</option>
+                                <option value="Ca 1">Ca 1 (06:00 - 14:00)</option>
+                                <option value="Ca 2">Ca 2 (14:00 - 22:00)</option>
+                                <option value="Ca 3">Ca 3 (22:00 - 06:00)</option>
+                            </select>
+                        </div>
+
+                        <!-- Tên nhân viên -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tên nhân viên</label>
+                            <select asp-for="TenNhanVien" class="form-select">
+                                <option value="">-- Chọn tên nhân viên --</option>
+                                @if (ViewBag.DSNV != null)
+                                {
+                                    foreach (var ten in ViewBag.DSNV)
+                                    {
+                                        <option value="@ten">@ten</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Ngày làm việc -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Ngày làm việc</label>
+                            <input asp-for="NgayLamViec" type="date" class="form-control" />
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            TIẾP TỤC → VÀO FORM TRACKING
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
