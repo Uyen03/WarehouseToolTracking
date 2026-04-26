@@ -7,6 +7,7 @@ namespace WarehouseToolTracking.Controllers
 {
     public class TrackingController : Controller
     {
+        private static DataTable dtDSNV;
 
         private static DataTable dtExcel;
 
@@ -71,8 +72,7 @@ namespace WarehouseToolTracking.Controllers
         {
             try
             {
-                // ==================== SỬA ĐƯỜNG DẪN FILE Ở ĐÂY ====================
-                string filePath = @"E:\Project\16.04.2026.M.xlsm"; 
+                string filePath = @"E:\Project\16.04.2026.M.xlsm";   // ← Đường dẫn của bạn
 
                 using (var stream = System.IO.File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 using (var reader = ExcelReaderFactory.CreateReader(stream))
@@ -84,22 +84,77 @@ namespace WarehouseToolTracking.Controllers
                             UseHeaderRow = true,
                             ReadHeaderRow = (rowReader) =>
                             {
-                                // Bỏ qua 7 dòng trống để dòng 8 là header
-                                for (int i = 0; i < 7; i++)
-                                    rowReader.Read();
+                                // Skip 7 dòng cho sheet Count (header ở dòng 8)
+                                for (int i = 0; i < 7; i++) rowReader.Read();
                             }
                         }
                     };
 
                     var result = reader.AsDataSet(conf);
+
                     dtExcel = result.Tables["Count"];
+
+                    // === LOAD SHEET DSNV (header ở dòng 2) ===
+                    if (result.Tables.Contains("DSNV"))
+                    {
+                        var dtTemp = result.Tables["DSNV"];
+                        dtDSNV = dtTemp.Clone();
+
+                        // Bắt đầu từ dòng 2 (index 1) để lấy header
+                        for (int i = 1; i < dtTemp.Rows.Count; i++)
+                        {
+                            dtDSNV.ImportRow(dtTemp.Rows[i]);
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Lỗi load Excel: " + ex.Message);
-                dtExcel = null; // Đảm bảo rõ ràng là null khi lỗi
             }
+        }
+
+        public IActionResult Start()
+        {
+            if (dtDSNV == null)
+                LoadExcelFile();
+
+            if (dtDSNV == null || dtDSNV.Columns.Count == 0)
+            {
+                ViewBag.Error = "Không load được sheet DSNV!";
+                return View(new ShiftSelectionModel());
+            }
+
+            // DEBUG: Hiển thị tất cả tên cột
+            var columnList = string.Join(", ", dtDSNV.Columns.Cast<DataColumn>().Select(c => $"[{c.ColumnName}]"));
+            ViewBag.ColumnDebug = "Các cột trong DSNV: " + columnList;
+
+            // Load danh sách nhân viên
+            ViewBag.DSNV = dtDSNV.AsEnumerable()
+                .Select(row => row.Field<string>(4)?.Trim())   
+                .Where(x => !string.IsNullOrEmpty(x))
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            return View(new ShiftSelectionModel());
+        }
+
+        [HttpPost]
+        public IActionResult Start(ShiftSelectionModel model)
+        {
+            if (string.IsNullOrEmpty(model.CaLamViec) || string.IsNullOrEmpty(model.TenNhanVien))
+            {
+                ViewBag.Error = "Vui lòng chọn đầy đủ Ca làm việc và Tên nhân viên";
+                return View(model);
+            }
+
+            // Lưu thông tin vào Session để Form Tracking sử dụng sau
+            HttpContext.Session.SetString("CaLamViec", model.CaLamViec);
+            HttpContext.Session.SetString("TenNhanVien", model.TenNhanVien);
+            HttpContext.Session.SetString("NgayLamViec", model.NgayLamViec.ToString("dd/MM/yyyy"));
+
+            return RedirectToAction("Index", "Tracking");
         }
     }
 }

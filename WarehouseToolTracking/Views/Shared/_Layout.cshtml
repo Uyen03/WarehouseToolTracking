@@ -1,49 +1,61 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - WarehouseToolTracking</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/WarehouseToolTracking.styles.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">WarehouseToolTracking</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        
-                    </ul>
+        <!-- NAVBAR CHÍNH – ĐÃ TÍCH HỢP HEADER CA, NV, NGÀY -->
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow">
+            <div class="container-fluid px-4">
+                <!-- Logo bên trái -->
+                <a class="navbar-brand fw-bold fs-4" asp-area="" asp-controller="Tracking" asp-action="Start">
+                    WarehouseToolTracking
+                </a>
+
+                <!-- Thông tin Ca - NV - Ngày + Đăng xuất bên phải -->
+                <div class="d-flex align-items-center gap-4">
+                    @if (!string.IsNullOrEmpty(Context.Session.GetString("CaLamViec")))
+                    {
+                        <div class="d-flex align-items-center gap-3 text-dark">
+                            <span><strong>Ca:</strong> @Context.Session.GetString("CaLamViec")</span>
+                            <span class="text-muted">|</span>
+                            <span><strong>NV:</strong> @Context.Session.GetString("TenNhanVien")</span>
+                            <span class="text-muted">|</span>
+                            <span><strong>Ngày:</strong> @Context.Session.GetString("NgayLamViec")</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted small">Chưa chọn ca & nhân viên</span>
+                    }
+
+                    <a href="/Tracking/Start" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                    </a>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+
+    <div class="container mt-4">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
+    <footer class="border-top footer text-muted py-3">
+        <div class="container text-center">
             &copy; 2026 - WarehouseToolTracking by Phương Uyển
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
-
-
