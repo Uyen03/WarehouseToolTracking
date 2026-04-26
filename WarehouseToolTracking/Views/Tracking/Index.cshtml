@@ -1,0 +1,302 @@
+﻿@model WarehouseToolTracking.Models.TrackingModel
+
+@{
+    ViewData["Title"] = "Tracking Đơn Thiếu Kho";
+}
+
+<div class="container mt-4">
+    <h2 class="text-primary text-center mb-4">TRACKING ĐƠN THIẾU KHO</h2>
+
+    <!-- 1. THÔNG TIN ĐƠN -->
+    <div class="row mb-4 border-bottom pb-3">
+        <div class="col-md-3">
+            <label class="form-label fw-bold">1. LIST ID</label>
+            <input type="text" id="txtListID" class="form-control" placeholder="Quét List ID" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold">SKU</label>
+            <input type="text" id="txtSKU" class="form-control" placeholder="Nhập hoặc quét SKU" autofocus />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">Tên sản phẩm</label>
+            <input type="text" id="txtTenSanPham" class="form-control bg-light" readonly />
+        </div>
+    </div>
+
+    <!-- 2. THÔNG TIN ĐƠN THIẾU -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label class="form-label fw-bold">2. VỊ TRÍ THIẾU</label>
+            <input type="text" id="txtViTriThieu" class="form-control" placeholder="Click nút Thiếu hoặc gõ tay" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold">SL THIẾU</label>
+            <input type="number" id="txtSLThieu" class="form-control" min="1" value="1" />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label fw-bold">Ghi chú (nếu có)</label>
+            <input type="text" id="txtGhiChu" class="form-control" placeholder="Nhập ghi chú thêm..." />
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 3. DANH SÁCH VỊ TRÍ CÓ HÀNG (rộng hơn) -->
+        <div class="col-md-8">
+            <h5>3. DANH SÁCH VỊ TRÍ CÓ HÀNG</h5>
+            <div class="table-responsive">
+                <table id="tblViTriCoHang" class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Barcode</th>
+                            <th>SKU</th>
+                            <th>Tên sản phẩm</th>
+                            <th style="white-space: nowrap;">Vị trí</th>
+                            <th>On Hand</th>
+                            <th>Allocated</th>
+                            <th>Thiếu</th>
+                            <th>Lấy bù</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. VỊ TRÍ LẤY BÙ ĐÃ CHỌN -->
+        <div class="col-md-4">
+            <h5>4. VỊ TRÍ LẤY BÙ ĐÃ CHỌN</h5>
+            <div class="table-responsive">
+                <table id="tblViTriLayBu" class="table table-bordered">
+                    <thead class="table-info">
+                        <tr>
+                            <th>Vị trí Lấy</th>
+                            <th>SL Lấy</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="mt-3 text-end">
+                <strong>Tổng SL Lấy Bù: <span id="tongSLBu" class="text-success">0 / 0</span></strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. DANH SÁCH ĐƠN ĐÃ TRA -->
+    <div class="mt-5">
+        <h5>5. DANH SÁCH ĐƠN ĐÃ TRA</h5>
+        <div class="table-responsive">
+            <table id="tblDonDaTra" class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Ngày</th>
+                        <th>Ca làm việc</th>
+                        <th>Tên NV Tracking</th>
+                        <th>List ID</th>
+                        <th>SKU</th>
+                        <th>Vị trí Thiếu</th>
+                        <th>SL Thiếu</th>
+                        <th>Vị trí Lấy Bù</th>
+                        <th>SL Lấy Bù</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mt-4 text-end">
+        <button id="btnRefresh" class="btn btn-secondary btn-lg me-3">LÀM MỚI FORM (F2)</button>
+        <button id="btnLuu" class="btn btn-success btn-lg">LƯU ĐƠN (F1)</button>
+    </div>
+</div>
+
+<!-- Modal thông báo -->
+<div class="modal fade" id="alertModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Thông báo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body fw-bold" id="modalMessage"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+    // ====================== XỬ LÝ QUÉT BARCODE ======================
+    $("#txtListID").keypress(function (e) {
+        if (e.which === 13) {   
+            var listID = $(this).val().trim();
+            if (listID) {
+                
+                console.log("List ID đã quét: " + listID);
+                $("#txtSKU").focus();   
+            }
+        }
+    });
+    
+
+    $("#txtSKU").keypress(function (e) {
+        if (e.which === 13) {
+            var sku = $(this).val().trim();
+            if (sku) loadBySKU(sku);
+        }
+    });
+
+    function loadBySKU(sku) {
+        $.post('/Tracking/SearchBySKU', { sku: sku }, function (res) {
+            if (res.success) {
+                $("#txtTenSanPham").val(res.model.tenSanPham);
+                var tbody = $("#tblViTriCoHang tbody");
+                tbody.empty();
+
+                res.positions.forEach(function (item) {
+                    var row = `<tr>
+                            <td>${item.barcode || ''}</td>
+                            <td>${item.sku || ''}</td>
+                            <td>${item.tenSanPham || ''}</td>
+                            <td style="white-space: nowrap;">${item.viTri || ''}</td>
+                            <td>${item.onHand}</td>
+                            <td>${item.allocated}</td>
+                            <td><button class="btn btn-sm btn-warning btnThieu" data-vitri="${item.viTri}">Thiếu</button></td>
+                            <td><button class="btn btn-sm btn-success btnChon" data-vitri="${item.viTri}">Lấy bù</button></td>
+                        </tr>`;
+                    tbody.append(row);
+                });
+            } else {
+                alert(res.message);
+            }
+        });
+    }
+
+    $(document).on('click', '.btnThieu', function () {
+        $("#txtViTriThieu").val($(this).data('vitri'));
+    });
+
+    $(document).on('click', '.btnChon', function () {
+        var viTri = $(this).data('vitri');
+        var slThieu = parseInt($("#txtSLThieu").val()) || 1;
+        var row = `<tr>
+                <td>${viTri}</td>
+                <td><input type="number" class="form-control sl-lay" value="${slThieu}" min="1" style="width:80px"></td>
+                <td><button class="btn btn-sm btn-danger btnXoa">Xóa</button></td>
+            </tr>`;
+        $("#tblViTriLayBu tbody").append(row);
+        tinhTongSL();
+    });
+
+    $(document).on('click', '.btnXoa', function () {
+        $(this).closest('tr').remove();
+        tinhTongSL();
+    });
+
+    $(document).on('input change', '.sl-lay', tinhTongSL);
+
+    $("#txtSLThieu").on('input', function () {
+        $('.sl-lay').val($(this).val());
+        tinhTongSL();
+    });
+
+    function tinhTongSL() {
+        var total = 0;
+        $('.sl-lay').each(function () { total += parseInt($(this).val()) || 0; });
+        var slThieu = parseInt($("#txtSLThieu").val()) || 0;
+        $("#tongSLBu").text(total + " / " + slThieu);
+
+        if (total > slThieu) $("#tongSLBu").addClass('text-danger').removeClass('text-success text-warning');
+        else if (total < slThieu && total > 0) $("#tongSLBu").addClass('text-warning').removeClass('text-success text-danger');
+        else $("#tongSLBu").addClass('text-success').removeClass('text-danger text-warning');
+    }
+
+    $("#btnRefresh").click(function () { resetForm(); });
+
+    $(document).keydown(function (e) {
+        if (e.key === "F2") { e.preventDefault(); resetForm(); }
+    });
+
+    function resetForm() {
+        $("#txtSKU").val('');
+        $("#txtTenSanPham").val('');
+        $("#tblViTriCoHang tbody").empty();
+        $("#tblViTriLayBu tbody").empty();
+        $("#txtViTriThieu").val('');
+        $("#txtSLThieu").val(1);
+        $("#txtGhiChu").val('');
+        tinhTongSL();
+        $("#txtSKU").focus();
+    }
+
+
+    $("#btnLuu").click(function () {
+        var listID = $("#txtListID").val().trim();
+        var sku = $("#txtSKU").val().trim();
+
+        if (!listID) {
+            showModal("❌ Chưa quét List ID!");
+            $("#txtListID").focus();
+            return;
+        }
+        if (!sku) {
+            showModal("❌ Chưa nhập SKU!");
+            $("#txtSKU").focus();
+            return;
+        }
+
+        var total = 0;
+        $('.sl-lay').each(function () { total += parseInt($(this).val()) || 0; });
+        var slThieu = parseInt($("#txtSLThieu").val()) || 0;
+        var ghiChu = $("#txtGhiChu").val().trim() || "DONE";
+
+        if (total !== slThieu && total !== 0) {
+            showModal("❌ Tổng SL Lấy Bù phải bằng SL Thiếu!");
+            return;
+        }
+
+
+        var time = new Date().toLocaleTimeString('vi-VN');
+        var ngay = new Date().toLocaleDateString('vi-VN');
+        var caLamViec = "Ca 1";
+        var tenNV = "Nguyễn Văn A";
+
+        var viTriThieu = $("#txtViTriThieu").val();
+        var viTriLayBuText = total > 0
+            ? Array.from($("#tblViTriLayBu tbody tr")).map(tr => $(tr).find('td:first').text()).join(", ")
+            : "Không có";
+
+        var newRow = `<tr>
+                <td>${time}</td>
+                <td>${ngay}</td>
+                <td>${caLamViec}</td>
+                <td>${tenNV}</td>
+                <td>${listID}</td>
+                <td>${sku}</td>
+                <td>${viTriThieu}</td>
+                <td>${slThieu}</td>
+                <td>${viTriLayBuText}</td>
+                <td>${total}</td>
+                <td>${ghiChu}</td>
+            </tr>`;
+
+        $("#tblDonDaTra tbody").prepend(newRow);
+
+        showModal("✅ Đã lưu đơn thành công!", "success");
+        resetForm();
+    });
+
+    function showModal(message, type = "danger") {
+        $("#modalMessage").html(message);
+        var modal = new bootstrap.Modal(document.getElementById('alertModal'));
+        modal.show();
+    }
+</script>
