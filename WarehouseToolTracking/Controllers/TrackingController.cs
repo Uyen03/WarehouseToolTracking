@@ -2,22 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
 using WarehouseToolTracking.Models;
-using ClosedXML.Excel;    
-using System.IO;
 
 namespace WarehouseToolTracking.Controllers
 {
     public class TrackingController : Controller
     {
-        private static readonly string BaoCaoFolder = @"E:\Project\WarehouseToolTracking\BaoCaoTracking\";
         private static DataTable dtDSNV;
 
         private static DataTable dtExcel;
-        static TrackingController()
-        {
-            if (!Directory.Exists(BaoCaoFolder))
-                Directory.CreateDirectory(BaoCaoFolder);
-        }
 
         public IActionResult Index()
         {
@@ -164,128 +156,7 @@ namespace WarehouseToolTracking.Controllers
 
             return RedirectToAction("Index", "Tracking");
         }
-        //[HttpPost]
-        //public IActionResult SaveRecord(TrackingRecord record)
-        //{
-        //    try
-        //    {
-        //        string fileName = $"BaoCao_Tracking_{DateTime.Today:dd-MM-yyyy}.xlsx";
-        //        string fullPath = Path.Combine(BaoCaoFolder, fileName);
-
-        //        // SỬA LỖI Ở ĐÂY: Dùng System.IO.File.Exists
-        //        using (var workbook = System.IO.File.Exists(fullPath)
-        //            ? new XLWorkbook(fullPath)
-        //            : new XLWorkbook())
-        //        {
-        //            var worksheet = workbook.Worksheets.FirstOrDefault(w => w.Name == "DonDaTra")
-        //                         ?? workbook.Worksheets.Add("DonDaTra");
-
-        //            // Tạo header nếu file mới
-        //            if (worksheet.Cell(1, 1).Value.ToString() == "")
-        //            {
-        //                worksheet.Cell(1, 1).Value = "Thời gian";
-        //                worksheet.Cell(1, 2).Value = "Ngày";
-        //                worksheet.Cell(1, 3).Value = "Ca làm việc";
-        //                worksheet.Cell(1, 4).Value = "Tên NV Tracking";
-        //                worksheet.Cell(1, 5).Value = "List ID";
-        //                worksheet.Cell(1, 6).Value = "SKU";
-        //                worksheet.Cell(1, 7).Value = "Vị trí Thiếu";
-        //                worksheet.Cell(1, 8).Value = "SL Thiếu";
-        //                worksheet.Cell(1, 9).Value = "Vị trí Lấy Bù";
-        //                worksheet.Cell(1, 10).Value = "SL Lấy Bù";
-        //                worksheet.Cell(1, 11).Value = "Ghi chú";
-        //            }
-
-        //            int lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
-        //            lastRow++;
-
-        //            worksheet.Cell(lastRow, 1).Value = record.ThoiGian;
-        //            worksheet.Cell(lastRow, 2).Value = record.Ngay;
-        //            worksheet.Cell(lastRow, 3).Value = record.CaLamViec;
-        //            worksheet.Cell(lastRow, 4).Value = record.TenNVTracking;
-        //            worksheet.Cell(lastRow, 5).Value = record.ListID;
-        //            worksheet.Cell(lastRow, 6).Value = record.SKU;
-        //            worksheet.Cell(lastRow, 7).Value = record.ViTriThieu;
-        //            worksheet.Cell(lastRow, 8).Value = record.SLThieu;
-        //            worksheet.Cell(lastRow, 9).Value = record.ViTriLayBu;
-        //            worksheet.Cell(lastRow, 10).Value = record.SLLayBu;
-        //            worksheet.Cell(lastRow, 11).Value = record.GhiChu;
-
-        //            workbook.SaveAs(fullPath);
-        //        }
-
-        //        return Json(new { success = true });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return Json(new { success = false, message = ex.Message });
-        //    }
-        //}
-        [HttpPost]
-        public IActionResult SaveRecord(TrackingRecord record)
-        {
-            try
-            {
-                string dbPath = Path.Combine(BaoCaoFolder, "TrackingData.db");  // Tạo file TrackingData.db
-
-                using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}"))
-                {
-                    connection.Open();
-
-                    // Tạo bảng nếu chưa có
-                    string createTable = @"
-                CREATE TABLE IF NOT EXISTS DonDaTra (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ThoiGian TEXT,
-                    Ngay TEXT,
-                    CaLamViec TEXT,
-                    TenNVTracking TEXT,
-                    ListID TEXT,
-                    SKU TEXT,
-                    ViTriThieu TEXT,
-                    SLThieu INTEGER,
-                    ViTriLayBu TEXT,
-                    SLLayBu INTEGER,
-                    GhiChu TEXT
-                )";
-
-                    using (var cmd = new Microsoft.Data.Sqlite.SqliteCommand(createTable, connection))
-                        cmd.ExecuteNonQuery();
-
-                    // Insert dữ liệu
-                    string insert = @"
-                INSERT INTO DonDaTra 
-                (ThoiGian, Ngay, CaLamViec, TenNVTracking, ListID, SKU, ViTriThieu, SLThieu, ViTriLayBu, SLLayBu, GhiChu)
-                VALUES 
-                (@ThoiGian, @Ngay, @CaLamViec, @TenNVTracking, @ListID, @SKU, @ViTriThieu, @SLThieu, @ViTriLayBu, @SLLayBu, @GhiChu)";
-
-                    using (var cmd = new Microsoft.Data.Sqlite.SqliteCommand(insert, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@ThoiGian", record.ThoiGian.ToString("yyyy-MM-dd HH:mm:ss"));
-                        cmd.Parameters.AddWithValue("@Ngay", record.Ngay);
-                        cmd.Parameters.AddWithValue("@CaLamViec", record.CaLamViec);
-                        cmd.Parameters.AddWithValue("@TenNVTracking", record.TenNVTracking);
-                        cmd.Parameters.AddWithValue("@ListID", record.ListID);
-                        cmd.Parameters.AddWithValue("@SKU", record.SKU);
-                        cmd.Parameters.AddWithValue("@ViTriThieu", record.ViTriThieu);
-                        cmd.Parameters.AddWithValue("@SLThieu", record.SLThieu);
-                        cmd.Parameters.AddWithValue("@ViTriLayBu", record.ViTriLayBu);
-                        cmd.Parameters.AddWithValue("@SLLayBu", record.SLLayBu);
-                        cmd.Parameters.AddWithValue("@GhiChu", record.GhiChu);
-
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-
-                return Json(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
     }
 }
-
 
 

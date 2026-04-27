@@ -240,61 +240,6 @@
     }
 
 
-    // $("#btnLuu").click(function () {
-    //     var listID = $("#txtListID").val().trim();
-    //     var sku = $("#txtSKU").val().trim();
-
-    //     if (!listID) {
-    //         showModal("❌ Chưa quét List ID!");
-    //         $("#txtListID").focus();
-    //         return;
-    //     }
-    //     if (!sku) {
-    //         showModal("❌ Chưa nhập SKU!");
-    //         $("#txtSKU").focus();
-    //         return;
-    //     }
-
-    //     var total = 0;
-    //     $('.sl-lay').each(function () { total += parseInt($(this).val()) || 0; });
-    //     var slThieu = parseInt($("#txtSLThieu").val()) || 0;
-    //     var ghiChu = $("#txtGhiChu").val().trim() || "DONE";
-
-    //     if (total !== slThieu && total !== 0) {
-    //         showModal("❌ Tổng SL Lấy Bù phải bằng SL Thiếu!");
-    //         return;
-    //     }
-
-
-    //     var time = new Date().toLocaleTimeString('vi-VN');
-    //     var ngay = new Date().toLocaleDateString('vi-VN');
-    //     var ca = "@Context.Session.GetString("CaLamViec")";
-    //     var tenNV = "@Context.Session.GetString("TenNhanVien")";
-
-    //     var viTriThieu = $("#txtViTriThieu").val();
-    //     var viTriLayBuText = total > 0
-    //         ? Array.from($("#tblViTriLayBu tbody tr")).map(tr => $(tr).find('td:first').text()).join(", ")
-    //         : "Không có";
-
-    //     var newRow = `<tr>
-    //             <td>${time}</td>
-    //             <td>${ngay}</td>
-    //             <td>${ca}</td>
-    //             <td>${tenNV}</td>
-    //             <td>${listID}</td>
-    //             <td>${sku}</td>
-    //             <td>${viTriThieu}</td>
-    //             <td>${slThieu}</td>
-    //             <td>${viTriLayBuText}</td>
-    //             <td>${total}</td>
-    //             <td>${ghiChu}</td>
-    //         </tr>`;
-
-    //     $("#tblDonDaTra tbody").prepend(newRow);
-
-    //     showModal("✅ Đã lưu đơn thành công!", "success");
-    //     resetForm();
-    // });
     $("#btnLuu").click(function () {
         var listID = $("#txtListID").val().trim();
         var sku = $("#txtSKU").val().trim();
@@ -320,63 +265,35 @@
             return;
         }
 
+
         var time = new Date().toLocaleTimeString('vi-VN');
         var ngay = new Date().toLocaleDateString('vi-VN');
-        var ca = "@Html.Raw(Context.Session.GetString("CaLamViec") ?? "Ca 1")";
-        var tenNV = "@Html.Raw(Context.Session.GetString("TenNhanVien") ?? "Chưa chọn")";
+        var ca = "@Context.Session.GetString("CaLamViec")";
+        var tenNV = "@Context.Session.GetString("TenNhanVien")";
 
         var viTriThieu = $("#txtViTriThieu").val();
         var viTriLayBuText = total > 0
             ? Array.from($("#tblViTriLayBu tbody tr")).map(tr => $(tr).find('td:first').text()).join(", ")
             : "Không có";
 
-        // Dùng FormData để model binding ổn định hơn
-        var formData = new FormData();
-        formData.append("ThoiGian", new Date().toISOString());
-        formData.append("Ngay", ngay);
-        formData.append("CaLamViec", ca);
-        formData.append("TenNVTracking", tenNV);
-        formData.append("ListID", listID);
-        formData.append("SKU", sku);
-        formData.append("ViTriThieu", viTriThieu);
-        formData.append("SLThieu", slThieu);
-        formData.append("ViTriLayBu", viTriLayBuText);
-        formData.append("SLLayBu", total);
-        formData.append("GhiChu", ghiChu);
+        var newRow = `<tr>
+                <td>${time}</td>
+                <td>${ngay}</td>
+                <td>${ca}</td>
+                <td>${tenNV}</td>
+                <td>${listID}</td>
+                <td>${sku}</td>
+                <td>${viTriThieu}</td>
+                <td>${slThieu}</td>
+                <td>${viTriLayBuText}</td>
+                <td>${total}</td>
+                <td>${ghiChu}</td>
+            </tr>`;
 
-        $.ajax({
-            url: '/Tracking/SaveRecord',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (res) {
-                if (res.success) {
-                    var newRow = `<tr>
-                        <td>${time}</td>
-                        <td>${ngay}</td>
-                        <td>${ca}</td>
-                        <td>${tenNV}</td>
-                        <td>${listID}</td>
-                        <td>${sku}</td>
-                        <td>${viTriThieu}</td>
-                        <td>${slThieu}</td>
-                        <td>${viTriLayBuText}</td>
-                        <td>${total}</td>
-                        <td>${ghiChu}</td>
-                    </tr>`;
-                    $("#tblDonDaTra tbody").prepend(newRow);
+        $("#tblDonDaTra tbody").prepend(newRow);
 
-                    showModal("✅ Đã lưu đơn thành công vào SQLite!", "success");
-                    resetForm();
-                } else {
-                    showModal("❌ Lưu thất bại: " + (res.message || ""));
-                }
-            },
-            error: function () {
-                showModal("❌ Lỗi kết nối khi lưu dữ liệu");
-            }
-        });
+        showModal("✅ Đã lưu đơn thành công!", "success");
+        resetForm();
     });
 
     function showModal(message, type = "danger") {
