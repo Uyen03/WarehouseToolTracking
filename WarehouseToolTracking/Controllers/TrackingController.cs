@@ -226,13 +226,15 @@ namespace WarehouseToolTracking.Controllers
         {
             try
             {
-                string dbPath = Path.Combine(BaoCaoFolder, "TrackingData.db");  // Tạo file TrackingData.db
+                // Backend tự lấy thời gian chính xác (giờ Việt Nam)
+                record.ThoiGian = DateTime.Now;
+
+                string dbPath = Path.Combine(BaoCaoFolder, "TrackingData.db");
 
                 using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}"))
                 {
                     connection.Open();
 
-                    // Tạo bảng nếu chưa có
                     string createTable = @"
                 CREATE TABLE IF NOT EXISTS DonDaTra (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -252,7 +254,6 @@ namespace WarehouseToolTracking.Controllers
                     using (var cmd = new Microsoft.Data.Sqlite.SqliteCommand(createTable, connection))
                         cmd.ExecuteNonQuery();
 
-                    // Insert dữ liệu
                     string insert = @"
                 INSERT INTO DonDaTra 
                 (ThoiGian, Ngay, CaLamViec, TenNVTracking, ListID, SKU, ViTriThieu, SLThieu, ViTriLayBu, SLLayBu, GhiChu)
@@ -277,11 +278,113 @@ namespace WarehouseToolTracking.Controllers
                     }
                 }
 
+                // Tự động xuất Excel sau khi lưu
+                ExportToExcel();
+
                 return Json(new { success = true });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        private void ExportToExcel()
+        {
+            try
+            {
+                string dbPath = Path.Combine(BaoCaoFolder, "TrackingData.db");
+                string excelPath = Path.Combine(BaoCaoFolder, $"BaoCao_Tracking_{DateTime.Today:dd-MM-yyyy}.xlsx");
+
+                using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}"))
+                {
+                    connection.Open();
+                    using (var cmd = new Microsoft.Data.Sqlite.SqliteCommand("SELECT * FROM DonDaTra ORDER BY Id ASC", connection))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        using (var workbook = new XLWorkbook())
+                        {
+                            var ws = workbook.Worksheets.Add("DonDaTra");
+
+                            // Font mặc định size 18 cho toàn sheet
+                            ws.Style.Font.FontSize = 18;
+
+                            // ==================== TIÊU ĐỀ CHÍNH ====================
+                            ws.Cell(1, 1).Value = "TRACKING ĐƠN THIẾU KHO";
+                            ws.Range("A1:J1").Merge();
+                            ws.Cell(1, 1).Style.Font.Bold = true;
+                            ws.Cell(1, 1).Style.Font.FontSize = 20;
+                            ws.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                            // ==================== HEADER CHÍNH ====================
+                            // ĐƠN THIẾU (màu đỏ) - chỉ từ A3 đến G3
+                            ws.Cell(3, 1).Value = "ĐƠN THIẾU";
+                            ws.Range("A3:G3").Merge();
+                            ws.Cell(3, 1).Style.Fill.BackgroundColor = XLColor.Red;
+                            ws.Cell(3, 1).Style.Font.FontColor = XLColor.White;
+                            ws.Cell(3, 1).Style.Font.Bold = true;
+                            ws.Cell(3, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                            // VỊ TRÍ THAY THẾ (màu vàng) - chỉ từ H3 đến I3
+                            ws.Cell(3, 8).Value = "VỊ TRÍ THAY THẾ";
+                            ws.Range("H3:I3").Merge();
+                            ws.Cell(3, 8).Style.Fill.BackgroundColor = XLColor.Yellow;
+                            ws.Cell(3, 8).Style.Font.Bold = true;
+                            ws.Cell(3, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                            // Header chi tiết dòng 4
+                            string[] headers = { "DAY", "CA", "TÊN NGƯỜI TRA ĐƠN", "LIST ID", "SKU",
+                                       "VỊ TRÍ THIẾU", "SỐ LƯỢNG THIẾU",
+                                       "VỊ TRÍ LẤY BÙ", "SỐ LƯỢNG LẤY BÙ", "NOTE" };
+
+                            for (int i = 0; i < headers.Length; i++)
+                            {
+                                ws.Cell(4, i + 1).Value = headers[i];
+                            }
+
+                            // Format header dòng 4
+                            var headerRange = ws.Range("A4:J4");
+                            headerRange.Style.Font.Bold = true;
+                            headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+                            headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                            headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                            headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+                            // ==================== ĐỔ DỮ LIỆU ====================
+                            int row = 5;
+                            while (reader.Read())
+                            {
+                                ws.Cell(row, 1).Value = reader.GetString(2);   // DAY
+                                ws.Cell(row, 2).Value = reader.GetString(3);   // CA
+                                ws.Cell(row, 3).Value = reader.GetString(4);   // TÊN NGƯỜI TRA ĐƠN
+                                ws.Cell(row, 4).Value = reader.GetString(5);   // LIST ID
+                                ws.Cell(row, 5).Value = reader.GetString(6);   // SKU
+                                ws.Cell(row, 6).Value = reader.GetString(7);   // VỊ TRÍ THIẾU
+                                ws.Cell(row, 7).Value = reader.GetInt32(8);    // SỐ LƯỢNG THIẾU
+                                ws.Cell(row, 8).Value = reader.GetString(9);   // VỊ TRÍ LẤY BÙ
+                                ws.Cell(row, 9).Value = reader.GetInt32(10);   // SỐ LƯỢNG LẤY BÙ
+                                ws.Cell(row, 10).Value = reader.GetString(11); // NOTE
+
+                                // Viền cho từng dòng dữ liệu
+                                var dataRange = ws.Range(row, 1, row, 10);
+                                dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                                dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+                                row++;
+                            }
+
+                            // Auto fit cột và viền toàn bảng
+                            ws.Columns().AdjustToContents();
+                            ws.Range("A3:J" + (row - 1)).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+
+                            workbook.SaveAs(excelPath);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Lỗi xuất Excel: " + ex.Message);
             }
         }
     }
