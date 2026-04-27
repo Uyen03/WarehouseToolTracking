@@ -387,6 +387,29 @@ namespace WarehouseToolTracking.Controllers
                 Console.WriteLine("Lỗi xuất Excel: " + ex.Message);
             }
         }
+
+        [HttpGet]
+        public IActionResult DownloadExcel()
+        {
+            try
+            {
+                string excelPath = Path.Combine(BaoCaoFolder, $"BaoCao_Tracking_{DateTime.Today:dd-MM-yyyy}.xlsx");
+
+                if (!System.IO.File.Exists(excelPath))
+                {
+                    return Json(new { success = false, message = "Chưa có dữ liệu báo cáo hôm nay!" });
+                }
+
+                byte[] fileBytes = System.IO.File.ReadAllBytes(excelPath);
+                string fileName = $"BaoCao_Tracking_{DateTime.Today:dd-MM-yyyy}.xlsx";
+
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi: " + ex.Message });
+            }
+        }
     }
 }
 
