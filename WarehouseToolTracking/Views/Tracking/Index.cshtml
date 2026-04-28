@@ -15,7 +15,7 @@
         </div>
         <div class="col-md-3">
             <label class="form-label fw-bold">SKU</label>
-            <input type="text" id="txtSKU" class="form-control" placeholder="Nhập hoặc quét SKU" autofocus />
+            <input type="text" id="txtSKU" class="form-control" placeholder="Nhập SKU (VD:5918*7)" autofocus />
         </div>
         <div class="col-md-6">
             <label class="form-label fw-bold">Tên sản phẩm</label>
@@ -160,7 +160,16 @@
     function loadBySKU(sku) {
         $.post('/Tracking/SearchBySKU', { sku: sku }, function (res) {
             if (res.success) {
+                
+                let fullSKU = (res.positions && res.positions.length > 0)
+                    ? res.positions[0].sku
+                    : sku;
+
+                
+                $("#txtSKU").val(fullSKU);
+
                 $("#txtTenSanPham").val(res.model.tenSanPham);
+
                 var tbody = $("#tblViTriCoHang tbody");
                 tbody.empty();
 
@@ -177,6 +186,8 @@
                         </tr>`;
                     tbody.append(row);
                 });
+
+                console.log(" Đã thay SKU wildcard thành SKU thật: " + fullSKU);
             } else {
                 alert(res.message);
             }
@@ -370,7 +381,7 @@
                     </tr>`;
                     $("#tblDonDaTra tbody").prepend(newRow);
 
-                    showModal("✅ Đã lưu đơn thành công vào SQLite!", "success");
+                    showModal("✅ Đã lưu đơn thành công!", "success");
                     resetForm();
                 } else {
                     showModal("❌ Lưu thất bại: " + (res.message || ""));

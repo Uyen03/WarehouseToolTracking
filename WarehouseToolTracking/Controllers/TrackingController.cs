@@ -27,6 +27,54 @@ namespace WarehouseToolTracking.Controllers
             return View(new TrackingModel());
         }
 
+        //[HttpPost]
+        //public IActionResult SearchBySKU(string sku)
+        //{
+        //    if (string.IsNullOrWhiteSpace(sku))
+        //        return Json(new { success = false, message = "Vui lòng nhập SKU" });
+
+        //    if (dtExcel == null)
+        //        LoadExcelFile();
+
+        //    // Kiểm tra lại lần nữa sau khi load
+        //    if (dtExcel == null)
+        //        return Json(new { success = false, message = "Không load được file Excel. Kiểm tra đường dẫn file!" });
+
+        //    try
+        //    {
+        //        DataView dv = new DataView(dtExcel);
+        //        dv.RowFilter = $"[Mã sản phẩm] = '{sku.Trim()}'";
+
+        //        if (dv.Count == 0)
+        //        {
+        //            return Json(new { success = false, message = $"Không tìm thấy SKU: {sku}" });
+        //        }
+
+        //        var model = new TrackingModel
+        //        {
+        //            SKU = sku,
+        //            TenSanPham = dv[0]["Tên sản phẩm"]?.ToString() ?? ""
+        //        };
+
+        //        var positions = dv.Cast<DataRowView>()
+        //            .Select(row => new
+        //            {
+        //                Barcode = row["Barcode"]?.ToString(),
+        //                SKU = row["Mã sản phẩm"]?.ToString(),
+        //                TenSanPham = row["Tên sản phẩm"]?.ToString(),
+        //                ViTri = row["Vị trí"]?.ToString(),
+        //                OnHand = Convert.ToInt32(row["On Hand"] ?? 0),
+        //                Allocated = Convert.ToInt32(row["Allocated"] ?? 0)
+        //            })
+        //            .ToList();
+
+        //        return Json(new { success = true, model = model, positions = positions });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Json(new { success = false, message = "Lỗi: " + ex.Message });
+        //    }
+        //}
         [HttpPost]
         public IActionResult SearchBySKU(string sku)
         {
@@ -36,37 +84,52 @@ namespace WarehouseToolTracking.Controllers
             if (dtExcel == null)
                 LoadExcelFile();
 
-            // Kiểm tra lại lần nữa sau khi load
             if (dtExcel == null)
-                return Json(new { success = false, message = "Không load được file Excel. Kiểm tra đường dẫn file!" });
+                return Json(new { success = false, message = "Không load được file Excel!" });
 
             try
             {
-                DataView dv = new DataView(dtExcel);
-                dv.RowFilter = $"[Mã sản phẩm] = '{sku.Trim()}'";
+                string skuInput = sku.Trim().ToUpper();
 
-                if (dv.Count == 0)
+                // Lọc dữ liệu bằng LINQ (hỗ trợ wildcard *)
+                var filteredRows = dtExcel.AsEnumerable()
+                    .Where(row =>
+                    {
+                        string maSanPham = row.Field<string>("Mã sản phẩm")?.Trim().ToUpper() ?? "";
+
+                        if (skuInput.Contains("*"))
+                        {
+                            // Chuyển * thành .* để dùng Regex
+                            string pattern = "^" + skuInput.Replace("*", ".*") + "$";
+                            return System.Text.RegularExpressions.Regex.IsMatch(maSanPham, pattern);
+                        }
+                        else
+                        {
+                            return maSanPham == skuInput;
+                        }
+                    })
+                    .ToList();
+
+                if (filteredRows.Count == 0)
                 {
-                    return Json(new { success = false, message = $"Không tìm thấy SKU: {sku}" });
+                    return Json(new { success = false, message = $"Không tìm thấy SKU nào khớp với: {skuInput}" });
                 }
 
                 var model = new TrackingModel
                 {
-                    SKU = sku,
-                    TenSanPham = dv[0]["Tên sản phẩm"]?.ToString() ?? ""
+                    SKU = skuInput,
+                    TenSanPham = filteredRows[0].Field<string>("Tên sản phẩm") ?? ""
                 };
 
-                var positions = dv.Cast<DataRowView>()
-                    .Select(row => new
-                    {
-                        Barcode = row["Barcode"]?.ToString(),
-                        SKU = row["Mã sản phẩm"]?.ToString(),
-                        TenSanPham = row["Tên sản phẩm"]?.ToString(),
-                        ViTri = row["Vị trí"]?.ToString(),
-                        OnHand = Convert.ToInt32(row["On Hand"] ?? 0),
-                        Allocated = Convert.ToInt32(row["Allocated"] ?? 0)
-                    })
-                    .ToList();
+                var positions = filteredRows.Select(row => new
+                {
+                    Barcode = row.Field<string>("Barcode"),
+                    SKU = row.Field<string>("Mã sản phẩm"),
+                    TenSanPham = row.Field<string>("Tên sản phẩm"),
+                    ViTri = row.Field<string>("Vị trí"),
+                    OnHand = Convert.ToInt32(row["On Hand"] ?? 0),
+                    Allocated = Convert.ToInt32(row["Allocated"] ?? 0)
+                }).ToList();
 
                 return Json(new { success = true, model = model, positions = positions });
             }
@@ -75,6 +138,7 @@ namespace WarehouseToolTracking.Controllers
                 return Json(new { success = false, message = "Lỗi: " + ex.Message });
             }
         }
+
 
         private void LoadExcelFile()
         {
